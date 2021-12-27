@@ -1,4 +1,4 @@
-# HID-based DMX-USB interface running on an Atmega328p
+# UDMX-based DMX-USB interface running on an Atmega328p
 
 Work-in-progress.
 
