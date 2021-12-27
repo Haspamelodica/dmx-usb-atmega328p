@@ -21,8 +21,8 @@
 // includes
 // ------------------------------------------------------------------------------
 
-// UDMX library
-#include <udmx_lib.h>
+// UDMX USB library
+#include <dmx-udmx-lib.h>
 
 // AVR Libc (see http://www.nongnu.org/avr-libc/)
 #include <avr/io.h>     // include I/O definitions (port names, pin names, etc)
@@ -33,7 +33,7 @@
 #include <util/delay.h>
 
 // local includes
-#include "udmx.h"
+#include "dmx-udmx.h"
 #include "uDMX_cmds.h"    // USB command and error constants
 
 typedef unsigned char  u08;
@@ -80,7 +80,7 @@ static u16 lka_count;
 //
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnarrowing"
-static PROGMEM const char deviceDescrMIDI[] = { /* USB device descriptor */
+static PROGMEM const uchar deviceDescrMIDI[] = { /* USB device descriptor */
   18,     /* sizeof(usbDescriptorDevice): length of descriptor in bytes */
   USBDESCR_DEVICE,  /* descriptor type */
   0x10, 0x01,   /* USB version supported */
@@ -98,7 +98,7 @@ static PROGMEM const char deviceDescrMIDI[] = { /* USB device descriptor */
 };
 
 // B.2 Configuration Descriptor
-static PROGMEM const char configDescrMIDI[] = { /* USB configuration descriptor */
+static PROGMEM const uchar configDescrMIDI[] = { /* USB configuration descriptor */
   9,      /* sizeof(usbDescrConfig): length of descriptor in bytes */
   USBDESCR_CONFIG,  /* descriptor type */
   101, 0,     /* total length of data returned (including inlined descriptors) */
@@ -358,11 +358,11 @@ void init(void)
   // unused except PD2 / INT0 (used by USB driver),
   // maybe PD3 / INT1 if ENABLE_SLEEP_IF_IDLE (for bus activity detection (sleep)),
   // and PD1 (TX) which needs to be an output anyway.
-  DDRD = ~(USBMASK) & ~(1 << 2)
+  DDRD = (~(USBMASK) & ~(1 << 2)
 #if ENABLE_SLEEP_IF_IDLE
          & ~(1 << 3)
 #endif
-         ;
+         ) & 0xFF;
 
   //LEDs are now outputs because all unused pins are outputs
 
@@ -479,7 +479,7 @@ ISR(USART_UDRE_vect) {
 // - Start Bootloader
 // ------------------------------------------------------------------------------
 // dummy function doing the jump to bootloader section (Adress 0xC00 on Atmega8; address 0x3F00 on Arduino Uno)
-void (*jump_to_bootloader)(void) = 0x3F00; __attribute__ ((unused))
+void (*jump_to_bootloader)(void) = (void (*)(void)) 0x3F00; __attribute__ ((unused))
 
 void startBootloader(void) {
 
@@ -504,10 +504,10 @@ uchar usbFunctionDescriptor(usbRequest_t * rq)
   Serial.print(F("desc\n"));
 #endif
   if (rq->wValue.bytes[1] == USBDESCR_DEVICE) {
-    usbMsgPtr = (uchar *) deviceDescrMIDI;
+    usbMsgPtr = (usbMsgPtr_t) deviceDescrMIDI;
     return sizeof(deviceDescrMIDI);
   } else {    /* must be config descriptor */
-    usbMsgPtr = (uchar *) configDescrMIDI;
+    usbMsgPtr = (usbMsgPtr_t) configDescrMIDI;
     return sizeof(configDescrMIDI);
   }
 }
@@ -527,7 +527,7 @@ uchar usbFunctionSetup(uchar data[8])
   hexdump(dmx_data, NUM_CHANNELS);
   Serial.print('\n');
 #endif
-  usbMsgPtr = reply;
+  usbMsgPtr = (usbMsgPtr_t) reply;
   reply[0] = 0;
   if (data[1] == cmd_SetSingleChannel) {
     lka_count = 0;
@@ -553,7 +553,7 @@ uchar usbFunctionSetup(uchar data[8])
     cur_channel = data[4] | (data[5] << 8);
     end_channel = cur_channel + (data[2] | (data[3] << 8));
     // check for legal channel range
-    if ((end_channel - cur_channel) > (data[6] | (data[7] << 8)))
+    if ((end_channel - cur_channel) > (unsigned short) (data[6] | (data[7] << 8)))
     {
       reply[0] = err_BadValue;
       cur_channel = end_channel = 0;
@@ -581,7 +581,7 @@ uchar usbFunctionSetup(uchar data[8])
 /* usbFunctionRead                                                           */
 /*---------------------------------------------------------------------------*/
 
-uchar usbFunctionRead(uchar * data, uchar len)
+uchar usbFunctionRead(uchar * data, uchar)
 {
 #if DEBUG_USB
   Serial.print(F("read\n"));
