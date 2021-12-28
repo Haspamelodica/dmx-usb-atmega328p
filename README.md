@@ -62,4 +62,3 @@ TODO
  - [UDMX sources](https://github.com/mirdej/udmx)
  - [FX5 project website](http://fx5.de/) (broken; still accessible in the [Wayback Machine](https://web.archive.org/web/20180828195509/https://fx5.de/))
  - [FX5 standalone software](https://github.com/fx5/usbdmx)
- 

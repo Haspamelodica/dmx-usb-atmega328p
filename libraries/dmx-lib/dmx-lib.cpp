@@ -93,7 +93,7 @@ ISR(USART_UDRE_vect) {
   cbi(UCSR0B, UDRIE0);
   sei();
   */
-  
+
   while(UCSR0A & BV(UDRE0))
     if(dmx_state == dmx_InPacket)
 	  if(handle_udre_inPacket())

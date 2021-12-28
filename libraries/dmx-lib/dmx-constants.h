@@ -17,7 +17,7 @@
 
 // values for dmx_state
 #define dmx_Off 0
-#define dmx_NewPacket 1	
+#define dmx_NewPacket 1
 #define dmx_InPacket 2
 #define dmx_EndOfPacket 3
 #define dmx_InBreak 4

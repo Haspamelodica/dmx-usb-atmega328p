@@ -2,11 +2,8 @@
 #define __usb_cmds_included_included__
 
 /*
- *  usb2dmx_cmds.h
- *  
- *
+ *  udmx-cmds.h
  *  Created by Max Egger on 14.02.06.
- *
  */
 
 #define cmd_SetSingleChannel 1
@@ -25,16 +22,10 @@
 	wIndex:			index of first channel to set [0 .. 511]
 	wLength:		length of data, must be >= wValue
 */
-
 #define cmd_StartBootloader 0xf8
 // Start Bootloader for Software updates
 
-
 #define err_BadChannel 1
 #define err_BadValue 2
-
-
-
-
 
 #endif

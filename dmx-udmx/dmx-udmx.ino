@@ -301,7 +301,7 @@ void init(void)
   initForUsbConnectivity(); // enumerate device
 
   sei();
-  
+
 #if DISABLE_DMX_OUTPUT && (DEBUG_USB | DEBUG_DMX_VALUES)
   Serial.begin(DEBUG_BAUD);
 #else
@@ -489,7 +489,7 @@ uchar usbFunctionWrite(uchar* data, uchar len)
 
   // update channel values from received data
   len = min(len, end_channel - cur_channel);
-  
+
   dmx_set_range(cur_channel, len, data);
   cur_channel += len;
 

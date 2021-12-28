@@ -157,9 +157,9 @@ int main()
   }
   usbDeviceConnect();
   sei();
-  
+
   Serial.print(" complete!\n");
-  
+
   for (;;) {              /* main event loop */
     usbPoll();
   }
