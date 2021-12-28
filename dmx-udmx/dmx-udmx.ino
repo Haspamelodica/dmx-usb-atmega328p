@@ -1,19 +1,13 @@
-
 // ==============================================================================
-// uDMX.c
-// firmware for usb to dmx interface
+// dmx-udmx.ino
+// firmware for USB to DMX interface, ported to Atmega328p
 //
 // License:
 // The project is built with AVR USB driver by Objective Development, which is
-// published under an own licence based on the GNU General Public License (GPL).
-// usb2dmx is also distributed under this enhanced licence. See Documentation.
+// published under the GNU General Public License version 2.0 (GPLv2).
+// dmx-usb-atmega328p is also distributed under this licence.
 //
-// target-cpu: ATMega8 @ 12MHz
-// created 2006-02-09 mexx
-//
-// version 1.4     2009-06-09 me@anyma.ch
-//    - changed usb init routine
-// version 1.3:    2008-11-04 me@anyma.ch
+// target-cpu: ATMega328p @ 16MHz
 // ==============================================================================
 
 
@@ -21,8 +15,9 @@
 // includes
 // ------------------------------------------------------------------------------
 
-// UDMX USB library
-#include <dmx-udmx-lib.h>
+// local includes
+#include "dmx-udmx.h"
+#include "udmx-cmds.h"    // USB command and error constants
 
 // AVR Libc (see http://www.nongnu.org/avr-libc/)
 #include <avr/io.h>     // include I/O definitions (port names, pin names, etc)
@@ -32,15 +27,10 @@
 #include <avr/sleep.h>    // include cpu sleep support
 #include <util/delay.h>
 
-// local includes
-#include "dmx-udmx.h"
-#include "uDMX_cmds.h"    // USB command and error constants
+// UDMX USB library
+#include <dmx-udmx-lib.h>
 
-typedef unsigned char  u08;
-typedef   signed char  s08;
-typedef unsigned short u16;
-typedef   signed short s16;
-
+#include <dmx-lib.h>
 
 typedef struct _midi_msg {
   u08 cn : 4;
@@ -59,12 +49,6 @@ PROGMEM const int usbDescriptorStringSerialNumber[] = {USB_STRING_DESCRIPTOR_HEA
 // ==============================================================================
 // Globals
 // ------------------------------------------------------------------------------
-// dmx-related globals
-static u08 dmx_data[NUM_CHANNELS];
-static u16 out_idx;     // index of next frame to send
-static u16 packet_len = 0;  // we only send frames up to the highest channel set
-static u08 dmx_state = dmx_Off;
-
 // usb-related globals
 static u08 usb_state;
 static u16 cur_channel, end_channel;
@@ -249,9 +233,9 @@ static PROGMEM const uchar configDescrMIDI[] = { /* USB configuration descriptor
 };
 #pragma GCC diagnostic pop
 
+#if DISABLE_DMX_OUTPUT && (DEBUG_USB | DEBUG_DMX_VALUES)
 const char hexdigit_to_char[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-#if (DEBUG_USB | DEBUG_DMX_VALUES)
 void hexdump(void *data, size_t byte_len) {
   uint8_t *data_uint8 = (uint8_t *) data;
   for (size_t i = 0; i < byte_len; i ++) {
@@ -262,66 +246,11 @@ void hexdump(void *data, size_t byte_len) {
 }
 #endif
 
-// ==============================================================================
-// - sleepIfIdle
-// ------------------------------------------------------------------------------
-void sleepIfIdle()
-{
-#if ENABLE_SLEEP_IF_IDLE
-  if (TIFR1 & BV(TOV1)) {
-    cli();
-    if (!(EIFR & BV(INTF1))) {
-      // no activity on INT1 pin for >3ms => suspend:
-
-      // turn off leds
-      cbi(LED_GREEN_PORT, LED_GREEN_BIT);
-      cbi(LED_YELLOW_PORT, LED_YELLOW_BIT);
-
-      // - reconfigure INT1 to level-triggered and enable for wake-up
-      cbi(EICRA, ISC10);
-      sbi(EIMSK, INT1);
-      // - go to sleep
-      wdt_disable();
-      sleep_enable();
-      sei();
-      sleep_cpu();
-
-      // wake up
-      sleep_disable();
-      // - reconfigure INT1 to any edge for SE0-detection
-      cbi(EIMSK, INT1);
-      sbi(EICRA, ISC10);
-      // - re-enable watchdog
-      wdt_reset();
-      wdt_enable(WDTO_1S);
-    }
-    sei();
-    // clear INT1 flag
-    sbi(EIFR, INTF1);
-    // reload timer and clear overflow
-    TCCR1B = 1;
-    TCNT1 = 25000;    // max ca. 3ms between SE0
-    sbi(TIFR1, TOV1);
-
-    //welcome light again
-    cbi(LED_GREEN_PORT, LED_GREEN_BIT);
-    sbi(LED_YELLOW_PORT, LED_YELLOW_BIT);
-  }
-#endif
-}
-
 void hadAddressAssigned(void) {
   usb_state = usb_Idle;
   sbi(LED_GREEN_PORT, LED_GREEN_BIT);
   cbi(LED_YELLOW_PORT, LED_YELLOW_BIT);
 }
-
-#if ENABLE_SLEEP_IF_IDLE
-// ------------------------------------------------------------------------------
-// - INT1_vec (dummy for wake-up)
-// ------------------------------------------------------------------------------
-ISR(INT1_vect) {}
-#endif
 
 // ------------------------------------------------------------------------------
 // - Enumerate device
@@ -346,7 +275,7 @@ static void initForUsbConnectivity(void)
 // ------------------------------------------------------------------------------
 void init(void)
 {
-  dmx_state = dmx_Off;
+  usb_state = usb_NotInitialized;
   lka_count = 0xffff;
 
   //clear Power On reset flag
@@ -356,13 +285,8 @@ void init(void)
   DDRB = 0xFF;    // unused
   DDRC = 0xFF;    // unused
   // unused except PD2 / INT0 (used by USB driver),
-  // maybe PD3 / INT1 if ENABLE_SLEEP_IF_IDLE (for bus activity detection (sleep)),
   // and PD1 (TX) which needs to be an output anyway.
-  DDRD = (~(USBMASK) & ~(1 << 2)
-#if ENABLE_SLEEP_IF_IDLE
-         & ~(1 << 3)
-#endif
-         ) & 0xFF;
+  DDRD = (~(USBMASK) & ~(1 << 2)) & 0xFF;
 
   //LEDs are now outputs because all unused pins are outputs
 
@@ -370,110 +294,20 @@ void init(void)
   cbi(LED_GREEN_PORT, LED_GREEN_BIT);
   sbi(LED_YELLOW_PORT, LED_YELLOW_BIT);
 
-  // init timer0 for DMX timing
-  TCCR0B = 2; // prescaler 8 => 1 clock is 2/3 us for 12Mhz / .05 us for 16MHz (8 / F_CPU seconds)
-
-#if ENABLE_SLEEP_IF_IDLE
-  // init Timer 1  and Interrupt 1 for usb activity detection:
-  // - set INT1 to any edge (polled by sleepIfIdle())
-  cbi(EICRA, ISC11);
-  sbi(EICRA, ISC10);
-#endif
-
   wdt_enable(WDTO_1S);  // enable watchdog timer
-
-
-  // set sleep mode to full power-down for minimal consumption
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-
-#if ENABLE_SLEEP_IF_IDLE
-  // - set Timer 1 prescaler to 64 and restart timer
-  TCCR1B = 3;
-  TCNT1 = 0;
-  sbi(TIFR1, TOV1);
-#endif
 
   // init usb
   PORTB = 0;        // no pullups on USB pins
   initForUsbConnectivity(); // enumerate device
 
   sei();
-
-  // init uart
-  UBRR0L = F_CPU / (250000 * 16) - 1; UBRR0H =  0; // baud rate 250kbps
-  UCSR0A = 0; // clear error flags
-  UCSR0C = BV(USBS0) | BV(UCSZ01) | BV(UCSZ00); // 8 data bits, 2 stop bits, no parity (8N2)
-  // don't turn on UART yet; and don't set UDRIE0 (TX Data Register Empty Interrupt Enable) yet, even if HANDLE_UDRE0_VIA_INTERRUPT.
-  UCSR0B = 0
-#if HANDLE_TXC0_VIA_INTERRUPT
-  // Set TXCIE0 (TX Complete Interrupt Enable).
-  | BV(TXCIE0)
-#endif
-  ;
-
-  //  Serial.begin(230400);
-  //  Serial.print(F("Init complete\n"));
-}
-
-#if HANDLE_TXC0_VIA_INTERRUPT
-#if DEBUG_UNEXPECTED_TXC0
-uint8_t txc0_expected;
-#endif
-uint8_t txc0_from_interrupt;
-//Transmit Complete interrupt vector
-
-ISR(USART_TX_vect) {
-#if DEBUG_UNEXPECTED_TXC0
-  if (!txc0_expected)
-    LED_GREEN_PORT ^= BV(LED_GREEN_BIT);
-#endif
-  txc0_from_interrupt = 1;
-}
-#endif //HANDLE_TXC0_VIA_INTERRUPT
-
-//Returns 1 if state is now end-of-packet
-inline uint8_t handle_udre_inPacket() {
-  // send next byte of dmx packet
-  if (out_idx < packet_len) {
-    UDR0 = dmx_data[out_idx++];
-    return 0;
-  }
-  else {
-#if HANDLE_UDRE0_VIA_INTERRUPT
-	cbi(UCSR0B, UDRIE0); //disable UDRE (TX Data Register Empty) interrupt
-#endif
-#if (HANDLE_TXC0_VIA_INTERRUPT && DEBUG_UNEXPECTED_TXC0)
-    txc0_expected = 1;
-#endif
-    dmx_state = dmx_EndOfPacket;
-    return 1;
-  }
-}
-
-#if HANDLE_UDRE0_VIA_INTERRUPT
-ISR(USART_UDRE_vect) {
-  /* Disabled because it makes things worse.
-  //temporarily disable UDRIE0, but enable interrupts:
-  //we want to be able to be interrupted from the UDRE interrupt handler as USB should take precedence,
-  //but not cause a recursive loop
-  cbi(UCSR0B, UDRIE0);
-  sei();
-  */
   
-  while(UCSR0A & BV(UDRE0))
-    if(dmx_state == dmx_InPacket)
-	  if(handle_udre_inPacket())
-		//return, not break, to skip re-enabling UDRIE0 if we are now in EndOfPacket
-		return;
-
-  /* Disabled because it makes things worse.
-  //re-enable UDRIE0, but first disable interrupts:
-  //we only want to handle the next UDRE after returning
-  //cli();
-  //sbi(UCSR0B, UDRIE0);
-  */
+#if DISABLE_DMX_OUTPUT && (DEBUG_USB | DEBUG_DMX_VALUES)
+  Serial.begin(DEBUG_BAUD);
+#else
+  dmx_init();
+#endif
 }
-#endif //HANDLE_UDRE0_VIA_INTERRUPT
 
 // ------------------------------------------------------------------------------
 // - Start Bootloader
@@ -482,8 +316,6 @@ ISR(USART_UDRE_vect) {
 void (*jump_to_bootloader)(void) = (void (*)(void)) 0x3F00; __attribute__ ((unused))
 
 void startBootloader(void) {
-
-
   MCUSR &= ~(1 << PORF);      // clear power on reset flag
   // this will hint the bootloader that it was forced
 
@@ -500,7 +332,7 @@ void startBootloader(void) {
 
 uchar usbFunctionDescriptor(usbRequest_t * rq)
 {
-#if DEBUG_USB
+#if DISABLE_DMX_OUTPUT && DEBUG_USB
   Serial.print(F("desc\n"));
 #endif
   if (rq->wValue.bytes[1] == USBDESCR_DEVICE) {
@@ -517,12 +349,12 @@ uchar usbFunctionDescriptor(usbRequest_t * rq)
 // ------------------------------------------------------------------------------
 uchar usbFunctionSetup(uchar data[8])
 {
-#if DEBUG_USB
+#if DISABLE_DMX_OUTPUT && DEBUG_USB
   Serial.print(F("setup"));
   hexdump(data, 8);
   Serial.print('\n');
 #endif
-#if DEBUG_DMX_VALUES
+#if DISABLE_DMX_OUTPUT && DEBUG_DMX_VALUES
   Serial.print(F("dmx vals"));
   hexdump(dmx_data, NUM_CHANNELS);
   Serial.print('\n');
@@ -542,10 +374,7 @@ uchar usbFunctionSetup(uchar data[8])
       reply[0] = err_BadValue;
       return 1;
     }
-    dmx_data[channel] = data[2];
-    // update dmx state
-    if (channel >= packet_len) packet_len = channel + 1;
-    if (dmx_state == dmx_Off) dmx_state = dmx_NewPacket;
+    dmx_set_channel(channel, data[2]);
   }
   else if (data[1] == cmd_SetChannelRange) {
     lka_count = 0;
@@ -583,7 +412,7 @@ uchar usbFunctionSetup(uchar data[8])
 
 uchar usbFunctionRead(uchar * data, uchar)
 {
-#if DEBUG_USB
+#if DISABLE_DMX_OUTPUT && DEBUG_USB
   Serial.print(F("read\n"));
 #endif
   // DEBUG LED
@@ -609,7 +438,7 @@ uchar usbFunctionRead(uchar * data, uchar)
 
 void usbFunctionWriteOut(uchar * data, uchar len)
 {
-#if DEBUG_USB
+#if DISABLE_DMX_OUTPUT && DEBUG_USB
   Serial.print(F("writeOut"));
   hexdump(data, len);
   Serial.print('\n');
@@ -621,22 +450,18 @@ void usbFunctionWriteOut(uchar * data, uchar len)
       case 0xB0: {        // control change
           u08 chan_no = msg->byte[1] - 1;
           if (chan_no < 120) {  // controllers 120..127 are reserved for channel mode msg
-            dmx_data[chan_no] = msg->byte[2] << 1;
-            if (chan_no > packet_len) packet_len = chan_no;
+		    dmx_set_channel(chan_no, msg->byte[2] << 1);
           }
-          if (dmx_state == dmx_Off) dmx_state = dmx_NewPacket;
           break;
         }
       case 0x90: {        // note on
           u08 chan_no = msg->byte[1] - 1;
-          dmx_data[chan_no] = msg->byte[2] << 1;
-          if (chan_no > packet_len) packet_len = chan_no;
-          if (dmx_state == dmx_Off) dmx_state = dmx_NewPacket;
+		  dmx_set_channel(chan_no, msg->byte[2] << 1);
           break;
         }
       case 0x80: {        // note off
           u08 chan_no = msg->byte[1] - 1;
-          dmx_data[chan_no] = 0;
+		  dmx_set_channel(chan_no, 0);
           break;
         }
       default: break;
@@ -652,7 +477,7 @@ void usbFunctionWriteOut(uchar * data, uchar len)
 uchar usbFunctionWrite(uchar* data, uchar len)
 {
   //LED_GREEN_PORT ^= BV(LED_GREEN_BIT);
-#if DEBUG_USB
+#if DISABLE_DMX_OUTPUT && DEBUG_USB
   Serial.print(F("write"));
   hexdump(data, len);
   Serial.print('\n');
@@ -663,102 +488,16 @@ uchar usbFunctionWrite(uchar* data, uchar len)
   lka_count = 0;
 
   // update channel values from received data
-  //uchar* data_end = data + len;
-  //for (; (data < data_end) && (cur_channel < end_channel); ++data, ++cur_channel) {
-  //  dmx_data[cur_channel] = *data;
-  //}
   len = min(len, end_channel - cur_channel);
-  memcpy(dmx_data + cur_channel, data, len);
+  
+  dmx_set_range(cur_channel, len, data);
   cur_channel += len;
 
-  // update state
-  if (cur_channel > packet_len) packet_len = cur_channel;
-  if (dmx_state == dmx_Off) dmx_state = dmx_NewPacket;
   if (cur_channel >= end_channel) {
     usb_state = usb_Idle;
     return 1;   // tell driver we've got all data
   }
   return 0;   // otherwise, tell we want still more data
-}
-
-void pollDMX() {
-  // do dmx transmission
-  switch (dmx_state) {
-    case dmx_NewPacket: {
-        // start a new dmx packet:
-        sbi(UCSR0B, TXEN0);  // enable UART transmitter
-        out_idx = 0;    // reset output channel index
-        sbi(UCSR0A, TXC0);  // reset Transmit Complete flag
-        UDR0 =  0;    // send start byte
-        dmx_state = dmx_InPacket;
-#if HANDLE_TXC0_VIA_INTERRUPT
-#if DEBUG_UNEXPECTED_TXC0
-        txc0_expected = 0;
-#endif
-        txc0_from_interrupt = 0;
-#endif //HANDLE_TXC0_VIA_INTERRUPT
-#if HANDLE_UDRE0_VIA_INTERRUPT
-		sbi(UCSR0B, UDRIE0); //enable UDRE (TX Data Register Empty) interrupt
-#endif //HANDLE_UDRE0_VIA_INTERRUPT
-        break;
-      }
-#if (!HANDLE_UDRE0_VIA_INTERRUPT)
-    case dmx_InPacket: {
-        if (!(UCSR0A & BV(UDRE0)))
-          break;
-        if (!handle_udre_inPacket())
-          break;
-		break;
-      }
-#endif
-    case dmx_EndOfPacket: {
-        if (
-#if HANDLE_TXC0_VIA_INTERRUPT
-			txc0_from_interrupt
-#else
-			UCSR0A & BV(TXC0)
-#endif
-		) {
-#if HANDLE_TXC0_VIA_INTERRUPT
-#if DEBUG_UNEXPECTED_TXC0
-          txc0_expected = 0;
-#endif
-          txc0_from_interrupt = 0;
-#endif //HANDLE_TXC0_VIA_INTERRUPT
-          // send a BREAK:
-          cbi(UCSR0B, TXEN0); // disable UART transmitter
-          cbi(PORTD, 1);    // pull TX pin low
-
-          sbi(GTCCR, PSRSYNC);  // reset timer prescaler
-          //TCNT0 = 123;    // 132 clks = 88us //only correct for 12Mhz
-          TCNT0 = F_CPU / 8 * 92 / 1000000; //prescaler is 8 and we want 92us (instead of 88us in the original)
-          sbi(TIFR0, TOV0); // clear timer overflow flag
-          dmx_state = dmx_InBreak;
-        }
-        break;
-      }
-    case dmx_InBreak: {
-        if (TIFR0 & BV(TOV0)) {
-          sleepIfIdle();  // if there's been no activity on USB for > 3ms, put CPU to sleep
-
-          // end of BREAK: send MARK AFTER BREAK
-          sbi(PORTD, 1);    // pull TX pin high
-          sbi(GTCCR, PSRSYNC);  // reset timer prescaler
-          //TCNT0 = 243;    // 12 clks = 8us //only correct for 12Mhz
-          TCNT0 = F_CPU / 8 * 12 / 1000000; //prescaler is 8 and we want 12us (instead of 8us in the original)
-          sbi(TIFR0, TOV0); // clear timer overflow flag
-          dmx_state = dmx_InMAB;
-        }
-        break;
-      }
-    case dmx_InMAB: {
-        if (TIFR0 & BV(TOV0)) {
-          // end of MARK AFTER BREAK; start new dmx packet
-          dmx_state = dmx_NewPacket;
-        }
-        break;
-      }
-  }
 }
 
 // ==============================================================================
@@ -768,20 +507,9 @@ int main(void)
 {
   init();
   while (1) {
-
-    // usb-related stuff
     wdt_reset();
     usbPoll();
-
-    pollDMX();
-
-    if (!packet_len) {      // no data to send received, yet. dmx not active...
-      // let's see if we're connected at all
-      if (usb_state) {
-        sleepIfIdle();  // if there's been no activity on USB for > 3ms, put CPU to sleep
-      }
-    }
-
+    dmx_poll();
 
     // keep yellow led on?
     if (lka_count < 0xfff ) {
