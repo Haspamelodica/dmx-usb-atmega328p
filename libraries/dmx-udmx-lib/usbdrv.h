@@ -175,9 +175,6 @@ USB messages, even if they address another (low-speed) device on the same bus.
 
 struct usbRequest;  /* forward declaration */
 
-#ifdef __cplusplus
-extern "C"{
-#endif
 USB_PUBLIC void usbInit(void);
 /* This function must be called before interrupts are enabled and the main
  * loop is entered. We exepct that the PORT and DDR bits for D+ and D- have
@@ -191,17 +188,11 @@ USB_PUBLIC void usbPoll(void);
  * Please note that debug outputs through the UART take ~ 0.5ms per byte
  * at 19200 bps.
  */
-#ifdef __cplusplus
-} // extern "C"
-#endif
 extern usbMsgPtr_t usbMsgPtr;
 /* This variable may be used to pass transmit data to the driver from the
  * implementation of usbFunctionWrite(). It is also used internally by the
  * driver for standard control requests.
  */
-#ifdef __cplusplus
-extern "C"{
-#endif
 USB_PUBLIC usbMsgLen_t usbFunctionSetup(uchar data[8]);
 /* This function is called when the driver receives a SETUP transaction from
  * the host which is not answered by the driver itself (in practice: class and
@@ -230,22 +221,13 @@ USB_PUBLIC usbMsgLen_t usbFunctionSetup(uchar data[8]);
  * are only done if enabled by the configuration in usbconfig.h.
  */
 USB_PUBLIC usbMsgLen_t usbFunctionDescriptor(struct usbRequest *rq);
-#ifdef __cplusplus
-} // extern "C"
-#endif
 /* You need to implement this function ONLY if you provide USB descriptors at
  * runtime (which is an expert feature). It is very similar to
  * usbFunctionSetup() above, but it is called only to request USB descriptor
  * data. See the documentation of usbFunctionSetup() above for more info.
  */
 #if USB_CFG_HAVE_INTRIN_ENDPOINT
-#ifdef __cplusplus
-extern "C"{
-#endif
 USB_PUBLIC void usbSetInterrupt(uchar *data, uchar len);
-#ifdef __cplusplus
-} // extern "C"
-#endif
 /* This function sets the message which will be sent during the next interrupt
  * IN transfer. The message is copied to an internal buffer and must not exceed
  * a length of 8 bytes. The message may be 0 bytes long just to indicate the
@@ -274,13 +256,7 @@ USB_PUBLIC void usbSetInterrupt3(uchar *data, uchar len);
  */
 #endif  /* USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH */
 #if USB_CFG_IMPLEMENT_FN_WRITE
-#ifdef __cplusplus
-extern "C"{
-#endif
 USB_PUBLIC uchar usbFunctionWrite(uchar *data, uchar len);
-#ifdef __cplusplus
-} // extern "C"
-#endif
 /* This function is called by the driver to provide a control transfer's
  * payload data (control-out). It is called in chunks of up to 8 bytes. The
  * total count provided in the current control transfer can be obtained from
@@ -298,13 +274,7 @@ USB_PUBLIC uchar usbFunctionWrite(uchar *data, uchar len);
  */
 #endif /* USB_CFG_IMPLEMENT_FN_WRITE */
 #if USB_CFG_IMPLEMENT_FN_READ
-#ifdef __cplusplus
-extern "C"{
-#endif
 USB_PUBLIC uchar usbFunctionRead(uchar *data, uchar len);
-#ifdef __cplusplus
-} // extern "C"
-#endif
 /* This function is called by the driver to ask the application for a control
  * transfer's payload data (control-in). It is called in chunks of up to 8
  * bytes each. You should copy the data to the location given by 'data' and
@@ -346,13 +316,7 @@ USB_PUBLIC void usbFunctionWriteOut(uchar *data, uchar len);
  *     USB_INTR_ENABLE &= ~(1 << USB_INTR_ENABLE_BIT)
  * or use cli() to disable interrupts globally.
  */
-#ifdef __cplusplus
-extern "C"{
-#endif 
 extern unsigned usbCrc16(unsigned data, uchar len);
-#ifdef __cplusplus
-} // extern "C"
-#endif
 #define usbCrc16(data, len) usbCrc16((unsigned)(data), len)
 /* This function calculates the binary complement of the data CRC used in
  * USB data packets. The value is used to build raw transmit packets.
