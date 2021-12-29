@@ -54,6 +54,17 @@ Then, Arduino should be able to compile both variants without problems.
 
 TODO
 
+### Configuring
+
+In general, "enabling" or "setting" a constant means setting its value to 1,
+and "disabling" or "unsetting" means setting the value to 0.
+
+Some constants affecting both variants can be found in `libraries/dmx-lib/dmx-constants.h`.
+UDMX-only constants are in `dmx-udmx/dmx-udmx.h`, and HID-only constants in `dmx-hid/dmx-hid.h`.
+
+If the interface is choppy, try enabling ATOMIC_UDRE in `dmx-constants.h`.
+This makes DMX transmissions much more reliable; at the cost of more errors on the USB side.
+
 ## Related links
  - [QLC+](https://qlcplus.org/)
  - [VUSB project website](https://www.obdev.at/products/vusb/index.html)

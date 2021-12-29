@@ -8,10 +8,12 @@
 // If enabled, the green LED will be toggled each time an unexpected TXC0 interrupt is generated.
 // This happens if an UDRE0 interrupt couldn't be handled in time,
 // which happens if the USB driver is active for too long.
-// If this happens, the current DMX packet transmission to fail.
-#define DEBUG_UNEXPECTED_TXC0 1
+// If this happens, the current DMX packet transmission will fail.
+#define DEBUG_UNEXPECTED_TXC0 0
+
 #define HANDLE_TXC0_VIA_INTERRUPT 1
 #define HANDLE_UDRE0_VIA_INTERRUPT 1
+
 // VUSB requires interrupts to not be disabled for longer than 25 cycles.
 // Because of this, the interrupt handler for UDRE has to enable interrupts in its body.
 // However, this increases the likelihood of packet transmissions failing,
