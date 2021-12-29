@@ -54,7 +54,7 @@ static u08 usb_state;
 static u16 cur_channel, end_channel;
 static u08 reply[8];
 
-//led keep alive counter
+// LED keep alive counter
 static u16 lka_count;
 
 // This descriptor is based on http://www.usb.org/developers/devclass_docs/midi10.pdf
@@ -171,7 +171,7 @@ static PROGMEM const uchar configDescrMIDI[] = { /* USB configuration descriptor
   2,      /* bJackID */
   0,      /* iJack */
 
-  //B.4.4 MIDI OUT Jack Descriptor
+  // B.4.4 MIDI OUT Jack Descriptor
   9,      /* length of descriptor in bytes */
   36,     /* descriptor type */
   3,      /* MIDI_OUT_JACK descriptor */
@@ -194,7 +194,7 @@ static PROGMEM const uchar configDescrMIDI[] = { /* USB configuration descriptor
 
   // B.5 Bulk OUT Endpoint Descriptors
 
-  //B.5.1 Standard Bulk OUT Endpoint Descriptor
+  // B.5.1 Standard Bulk OUT Endpoint Descriptor
   9,      /* bLenght */
   USBDESCR_ENDPOINT,  /* bDescriptorType = endpoint */
   0x1,      /* bEndpointAddress OUT endpoint number 1 */
@@ -212,9 +212,9 @@ static PROGMEM const uchar configDescrMIDI[] = { /* USB configuration descriptor
   1,      /* baAssocJackID (0) */
 
 
-  //B.6 Bulk IN Endpoint Descriptors
+  // B.6 Bulk IN Endpoint Descriptors
 
-  //B.6.1 Standard Bulk IN Endpoint Descriptor
+  // B.6.1 Standard Bulk IN Endpoint Descriptor
   9,      /* bLenght */
   USBDESCR_ENDPOINT,  /* bDescriptorType = endpoint */
   0x81,     /* bEndpointAddress IN endpoint number 1 */
@@ -278,7 +278,7 @@ void init(void)
   usb_state = usb_NotInitialized;
   lka_count = 0xffff;
 
-  //clear Power On reset flag
+  // clear Power On reset flag
   MCUSR &= ~(1 << PORF);
 
   // configure IO-Ports; most are unused, we set them to outputs to have defined voltages
@@ -288,9 +288,9 @@ void init(void)
   // and PD1 (TX) which needs to be an output anyway.
   DDRD = (~(USBMASK) & ~(1 << 2)) & 0xFF;
 
-  //LEDs are now outputs because all unused pins are outputs
+  // LEDs are now outputs because all unused pins are outputs
 
-  //welcome light
+  // welcome light
   cbi(LED_GREEN_PORT, LED_GREEN_BIT);
   sbi(LED_YELLOW_PORT, LED_YELLOW_BIT);
 

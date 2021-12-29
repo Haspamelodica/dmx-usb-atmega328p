@@ -29,7 +29,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnarrowing"
 PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
-    0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop) //incorrect: "Vendor Defined Page 1"
+    0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop) // incorrect: "Vendor Defined Page 1"
     0x09, 0x01,                    // USAGE (Vendor Usage 1)
     0xa1, 0x01,                    // COLLECTION (Application)
     0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
@@ -101,7 +101,7 @@ uchar   usbFunctionWrite(uchar *data, uchar len)
 
 usbMsgLen_t usbFunctionSetup(uchar data[8])
 {
-  //two explicit casts to disable warnings
+  // two explicit casts to disable warnings
   usbRequest_t *rq = (usbRequest_t *) (void *) data;
 
   Serial.print("setup");

@@ -12,6 +12,13 @@
 #define DEBUG_UNEXPECTED_TXC0 1
 #define HANDLE_TXC0_VIA_INTERRUPT 1
 #define HANDLE_UDRE0_VIA_INTERRUPT 1
+// VUSB requires interrupts to not be disabled for longer than 25 cycles.
+// Because of this, the interrupt handler for UDRE has to enable interrupts in its body.
+// However, this increases the likelihood of packet transmissions failing,
+// which in turn makes DMX output very choppy and unreliable.
+// So, this behaviour (enabling interrupts in the UDRE handler) can be disabled
+// by enabling ATOMIC_UDRE. 
+#define ATOMIC_UDRE 0
 
 #define NUM_CHANNELS 512		// number of channels in DMX-512
 
