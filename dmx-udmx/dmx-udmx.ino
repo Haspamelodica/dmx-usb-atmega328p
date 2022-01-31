@@ -24,13 +24,13 @@
 #include <avr/pgmspace.h> // include program space (for PROGMEM)
 #include <avr/interrupt.h>  // include interrupt support
 #include <avr/wdt.h>    // include watchdog timer support
-#include <avr/sleep.h>    // include cpu sleep support
-#include <util/delay.h>
 
 // UDMX USB library
 #include <dmx-udmx-lib.h>
 
-#include <dmx-lib.h>
+#if DEBUG_ENABLED
+#include <dmx-debug-lib.h>
+#endif
 
 typedef struct _midi_msg {
   u08 cn : 4;
@@ -44,7 +44,6 @@ typedef struct _midi_msg {
 
 // device serial number, formatted as YearMonthDayNCounter
 PROGMEM const int usbDescriptorStringSerialNumber[] = {USB_STRING_DESCRIPTOR_HEADER(11), '1', '1', '0', '4', '2', '8', 'N', '0', '0', '7', '1'};
-
 
 // ==============================================================================
 // Globals
@@ -233,19 +232,6 @@ static PROGMEM const uchar configDescrMIDI[] = { /* USB configuration descriptor
 };
 #pragma GCC diagnostic pop
 
-#if DISABLE_DMX_OUTPUT && (DEBUG_USB | DEBUG_DMX_VALUES)
-const char hexdigit_to_char[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-void hexdump(void *data, size_t byte_len) {
-  uint8_t *data_uint8 = (uint8_t *) data;
-  for (size_t i = 0; i < byte_len; i ++) {
-    Serial.print(' ');
-    Serial.print(hexdigit_to_char[data_uint8[i] >> 4]);
-    Serial.print(hexdigit_to_char[data_uint8[i] & 0xF]);
-  }
-}
-#endif
-
 void hadAddressAssigned(void) {
   usb_state = usb_Idle;
   sbi(LED_GREEN_PORT, LED_GREEN_BIT);
@@ -275,6 +261,11 @@ static void initForUsbConnectivity(void)
 // ------------------------------------------------------------------------------
 void init(void)
 {
+#if DEBUG_ENABLED
+  Serial.begin(DEBUG_BAUD);
+  dbg_print(F("Init..."));
+#endif
+
   usb_state = usb_NotInitialized;
   lka_count = 0xffff;
 
@@ -300,12 +291,12 @@ void init(void)
   PORTB = 0;        // no pullups on USB pins
   initForUsbConnectivity(); // enumerate device
 
+  dmx_init();
+
   sei();
 
-#if DISABLE_DMX_OUTPUT && (DEBUG_USB | DEBUG_DMX_VALUES)
-  Serial.begin(DEBUG_BAUD);
-#else
-  dmx_init();
+#if DEBUG_ENABLED
+  dbg_print(F(" complete!\n"));
 #endif
 }
 
@@ -332,8 +323,8 @@ void startBootloader(void) {
 
 uchar usbFunctionDescriptor(usbRequest_t * rq)
 {
-#if DISABLE_DMX_OUTPUT && DEBUG_USB
-  Serial.print(F("desc\n"));
+#if DEBUG_ENABLED && DEBUG_USB
+  dbg_print(F("desc\n"));
 #endif
   if (rq->wValue.bytes[1] == USBDESCR_DEVICE) {
     usbMsgPtr = (usbMsgPtr_t) deviceDescrMIDI;
@@ -349,40 +340,44 @@ uchar usbFunctionDescriptor(usbRequest_t * rq)
 // ------------------------------------------------------------------------------
 uchar usbFunctionSetup(uchar data[8])
 {
-#if DISABLE_DMX_OUTPUT && DEBUG_USB
-  Serial.print(F("setup"));
-  hexdump(data, 8);
-  Serial.print('\n');
+  // two explicit casts to disable warnings
+  usbRequest_t *rq = (usbRequest_t *) (void *) data;
+
+#if DEBUG_ENABLED && DEBUG_USB
+  dbg_print(F("setup"));
+  dbg_usbrequest(data);
+  dbg_print('\n');
 #endif
-#if DISABLE_DMX_OUTPUT && DEBUG_DMX_VALUES
-  Serial.print(F("dmx vals"));
-  hexdump(dmx_data, NUM_CHANNELS);
-  Serial.print('\n');
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+  dbg_print(F("dmx vals"));
+  dbg_hexdump(dmx_data, NUM_CHANNELS);
+  dbg_print('\n');
 #endif
+
   usbMsgPtr = (usbMsgPtr_t) reply;
   reply[0] = 0;
-  if (data[1] == cmd_SetSingleChannel) {
+  if (rq->bRequest == cmd_SetSingleChannel) {
     lka_count = 0;
-    // get channel index from data.wIndex and check if in legal range [0..511]
-    u16 channel = data[4] | (data[5] << 8);
+    // get channel index from wIndex and check if in legal range [0..511]
+    u16 channel = rq->wIndex.word;
     if (channel > 511) {
       reply[0] = err_BadChannel;
       return 1;
     }
-    // get channel value from data.wValue and check if in legal range [0..255]
-    if (data[3]) {
+    // get channel value from wValue and check if in legal range [0..255]
+    if (rq->wValue.bytes[1]) {
       reply[0] = err_BadValue;
       return 1;
     }
-    dmx_set_channel(channel, data[2]);
+    dmx_set_channel(channel, rq->wValue.bytes[0]);
   }
-  else if (data[1] == cmd_SetChannelRange) {
+  else if (rq->bRequest == cmd_SetChannelRange) {
     lka_count = 0;
     // get start and end channel index
-    cur_channel = data[4] | (data[5] << 8);
-    end_channel = cur_channel + (data[2] | (data[3] << 8));
+    cur_channel = rq->wIndex.word;
+    end_channel = cur_channel + rq->wValue.word;
     // check for legal channel range
-    if ((end_channel - cur_channel) > (unsigned short) (data[6] | (data[7] << 8)))
+    if ((end_channel - cur_channel) > rq->wLength.word)
     {
       reply[0] = err_BadValue;
       cur_channel = end_channel = 0;
@@ -398,8 +393,7 @@ uchar usbFunctionSetup(uchar data[8])
     usb_state = usb_ChannelRange;
     return 0xFF;
 
-  } else if (data[1] == cmd_StartBootloader) {
-
+  } else if (rq->bRequest == cmd_StartBootloader) {
     startBootloader();
   }
 
@@ -412,8 +406,8 @@ uchar usbFunctionSetup(uchar data[8])
 
 uchar usbFunctionRead(uchar * data, uchar)
 {
-#if DISABLE_DMX_OUTPUT && DEBUG_USB
-  Serial.print(F("read\n"));
+#if DEBUG_ENABLED && DEBUG_USB
+  dbg_print(F("read\n"));
 #endif
   // DEBUG LED
   //PORTC ^= 0x02;
@@ -438,10 +432,10 @@ uchar usbFunctionRead(uchar * data, uchar)
 
 void usbFunctionWriteOut(uchar * data, uchar len)
 {
-#if DISABLE_DMX_OUTPUT && DEBUG_USB
-  Serial.print(F("writeOut"));
-  hexdump(data, len);
-  Serial.print('\n');
+#if DEBUG_ENABLED && DEBUG_USB
+  dbg_print(F("writeOut"));
+  dbg_hexdump(data, len);
+  dbg_print('\n');
 #endif
   while (len >= sizeof(midi_msg)) {
     midi_msg* msg = (midi_msg*)data;
@@ -450,18 +444,18 @@ void usbFunctionWriteOut(uchar * data, uchar len)
       case 0xB0: {        // control change
           u08 chan_no = msg->byte[1] - 1;
           if (chan_no < 120) {  // controllers 120..127 are reserved for channel mode msg
-		    dmx_set_channel(chan_no, msg->byte[2] << 1);
+            dmx_set_channel(chan_no, msg->byte[2] << 1);
           }
           break;
         }
       case 0x90: {        // note on
           u08 chan_no = msg->byte[1] - 1;
-		  dmx_set_channel(chan_no, msg->byte[2] << 1);
+          dmx_set_channel(chan_no, msg->byte[2] << 1);
           break;
         }
       case 0x80: {        // note off
           u08 chan_no = msg->byte[1] - 1;
-		  dmx_set_channel(chan_no, 0);
+          dmx_set_channel(chan_no, 0);
           break;
         }
       default: break;
@@ -476,11 +470,10 @@ void usbFunctionWriteOut(uchar * data, uchar len)
 // ------------------------------------------------------------------------------
 uchar usbFunctionWrite(uchar* data, uchar len)
 {
-  //LED_GREEN_PORT ^= BV(LED_GREEN_BIT);
-#if DISABLE_DMX_OUTPUT && DEBUG_USB
-  Serial.print(F("write"));
-  hexdump(data, len);
-  Serial.print('\n');
+#if DEBUG_ENABLED && DEBUG_USB
+  dbg_print(F("write"));
+  dbg_hexdump(data, len);
+  dbg_print('\n');
 #endif
   if (usb_state != usb_ChannelRange) {
     return 0xFF;  // stall if not in good state
@@ -506,7 +499,8 @@ uchar usbFunctionWrite(uchar* data, uchar len)
 int main(void)
 {
   init();
-  while (1) {
+
+  for(;;) {
     wdt_reset();
     usbPoll();
     dmx_poll();
@@ -520,5 +514,4 @@ int main(void)
       cbi(LED_YELLOW_PORT, LED_YELLOW_BIT);
     }
   }
-  return 0;
 }

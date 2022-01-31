@@ -236,3 +236,11 @@ void dmx_set_range(u16 channel_start, u16 length, u08 *value_buf) {
   if (channel_start + length > packet_len) packet_len = channel_start + length;
   if (dmx_state == dmx_Off) dmx_state = dmx_NewPacket;
 }
+
+u08 dmx_get_channel(u16 channel) {
+  return dmx_data[channel];
+}
+
+void dmx_get_range(u16 channel_start, u16 length, u08 *value_buf) {
+  memcpy(value_buf, &dmx_data[channel_start], length);
+}
