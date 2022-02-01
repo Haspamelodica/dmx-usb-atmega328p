@@ -514,4 +514,5 @@ int main(void)
       cbi(LED_YELLOW_PORT, LED_YELLOW_BIT);
     }
   }
+  return 0;
 }
