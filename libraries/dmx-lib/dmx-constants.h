@@ -19,7 +19,7 @@
 // However, this increases the likelihood of packet transmissions failing,
 // which in turn makes DMX output very choppy and unreliable.
 // So, this behaviour (enabling interrupts in the UDRE handler) can be disabled
-// by enabling ATOMIC_UDRE. 
+// by enabling ATOMIC_UDRE.
 #define ATOMIC_UDRE 0
 
 #define NUM_CHANNELS 512		// number of channels in DMX-512
