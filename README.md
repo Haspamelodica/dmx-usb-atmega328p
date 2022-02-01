@@ -1,8 +1,6 @@
 # DMX-USB interface running on an Atmega328p
 
-Work-in-progress.
-
-This is an Arduino project aiming to implement an USB-DMX interface compatible with [QLC+](https://qlcplus.org/).
+This is an Arduino project implementing an USB-DMX interface compatible with [QLC+](https://qlcplus.org/).
 It uses a rewritten port of [UDMX](https://github.com/mirdej/udmx) for implementing DMX,
 and [VUSB](https://www.obdev.at/products/vusb/index.html) for implementing USB.
 
