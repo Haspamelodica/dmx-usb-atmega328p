@@ -228,7 +228,7 @@ void dmx_poll() {
 void dmx_set_channel(u16 channel, u08 value) {
   dmx_data[channel] = value;
   // update dmx state
-  if (channel >= packet_len) packet_len = channel;
+  if (channel >= packet_len) packet_len = channel + 1;
   if (dmx_state == dmx_Off) dmx_state = dmx_NewPacket;
 }
 
