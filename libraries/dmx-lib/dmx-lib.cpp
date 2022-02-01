@@ -21,6 +21,8 @@ static volatile u08 dmx_state = dmx_Off;
 void dmx_init() {
   dmx_state = dmx_Off;
 
+  memset(dmx_data, 0, NUM_CHANNELS);
+
 #if !DISABLE_DMX_OUTPUT
   // init timer0 for DMX timing
   TCCR0B = 2; // prescaler 8 => 1 clock is 2/3 us for 12Mhz / .05 us for 16MHz (8 / F_CPU seconds)
