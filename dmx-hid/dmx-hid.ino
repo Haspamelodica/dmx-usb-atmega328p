@@ -205,8 +205,23 @@ uchar   usbFunctionWrite(uchar *data, uchar len)
   usb_index += len;
   failure |= usb_index > usb_length;
 
-  for(uint8_t i = 0; i < len && !failure; i ++)
-    failure |= handle_written_byte(data[i]);
+  // optimization for SetChannelRange
+  if(usb_state == usb_SetChannelRange && !failure) {
+    dmx_set_range(cur_channel, len, data);
+    cur_channel += len;
+  }
+  else
+    for(uint8_t i = 0; i < len && !failure; i ++) {
+      // optimization for SetChannelRange
+      if(usb_state == usb_SetChannelRange && i < len - 1 && !failure) {
+        uint8_t remaining = len - i;
+        dmx_set_range(cur_channel + i, remaining, data);
+        cur_channel += remaining;
+        break;
+      }
+
+      failure |= handle_written_byte(data[i]);
+    }
 
   if(failure)
 	usb_state = usb_Idle;
