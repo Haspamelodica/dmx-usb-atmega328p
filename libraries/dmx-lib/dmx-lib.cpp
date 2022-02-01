@@ -16,7 +16,7 @@ u08 dmx_data[NUM_CHANNELS];
 static u16 out_idx;     // index of next frame to send
 #endif
 static u16 packet_len = 0;  // we only send frames up to the highest channel set
-static u08 dmx_state = dmx_Off;
+static volatile u08 dmx_state = dmx_Off;
 
 void dmx_init() {
   dmx_state = dmx_Off;
