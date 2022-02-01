@@ -106,85 +106,85 @@ uchar usbFunctionRead(uchar *data, uchar len)
 inline uint8_t handle_written_byte(uint8_t value) {
   switch(usb_state) {
     case usb_NotInitialized:
-		// fall-through
-	case usb_Idle:
+        // fall-through
+    case usb_Idle:
 #if DEBUG_ENABLED && DEBUG_PARSING
-	  dbg_print(F("write in Idle / NotInitialized\n"));
+      dbg_print(F("write in Idle / NotInitialized\n"));
 #endif
       // illegal states for a write
-	  // no need to set usb_state to usb_Idle:
-	  // if we are in usb_NotInitialized, we want to stay there
-	  // and if we are in usb_Idle, switching to usb_Idle isn't neccessary
+      // no need to set usb_state to usb_Idle:
+      // if we are in usb_NotInitialized, we want to stay there
+      // and if we are in usb_Idle, switching to usb_Idle isn't neccessary
       return 1;
     case usb_InIgnoredBytes:
-	  // ignore; do nothing
-	  break;
+      // ignore; do nothing
+      break;
 
     case usb_SetReportStart:
 #if DEBUG_ENABLED && DEBUG_PARSING
-	  dbg_print(F("Command: "));
-	  dbg_print(value);
-	  dbg_print('\n');
+      dbg_print(F("Command: "));
+      dbg_print(value);
+      dbg_print('\n');
 #endif
-	  if(value < 16) {
-		cur_channel = value * BLOCK_SIZE;
-		// -1 because the first byte is the command.
-		if(cur_channel + usb_length - 1 > NUM_CHANNELS) {
+      if(value < 16) {
+        cur_channel = value * BLOCK_SIZE;
+        // -1 because the first byte is the command.
+        if(cur_channel + usb_length - 1 > NUM_CHANNELS) {
 #if DEBUG_ENABLED && DEBUG_PARSING
-	  dbg_print(F("Error: out of range\n"));
+      dbg_print(F("Error: out of range\n"));
 #endif
-		  // End channel out of range. Shouldn't happen in reality:
-		  // BLOCK_SIZE = 32, highest block index = 15 => highest start cur_channel = 32 * 15.
-		  // Report length 33; start byte is command => most data bytes in one report = 32.
-		  // => maximum required length = 32 * 16 = 512 = NUM_CHANNELS.
-		  usb_state = usb_Idle;
-		  return 1;
-		}
-		usb_state = usb_SetChannelRange;
-	  } else if(value == cmd_SetMode)
-		usb_state = usb_SetMode_ExpectingMode;
-	  else if(value == cmd_SetTimings || value == cmd_StoreTimings)
-		usb_state = usb_InIgnoredBytes;
-	  else {
-		// unknown command
-		usb_state = usb_Idle;
-		return 1;
-	  }
-	  break;
+          // End channel out of range. Shouldn't happen in reality:
+          // BLOCK_SIZE = 32, highest block index = 15 => highest start cur_channel = 32 * 15.
+          // Report length 33; start byte is command => most data bytes in one report = 32.
+          // => maximum required length = 32 * 16 = 512 = NUM_CHANNELS.
+          usb_state = usb_Idle;
+          return 1;
+        }
+        usb_state = usb_SetChannelRange;
+      } else if(value == cmd_SetMode)
+        usb_state = usb_SetMode_ExpectingMode;
+      else if(value == cmd_SetTimings || value == cmd_StoreTimings)
+        usb_state = usb_InIgnoredBytes;
+      else {
+        // unknown command
+        usb_state = usb_Idle;
+        return 1;
+      }
+      break;
 
     case usb_SetMode_ExpectingMode:
 #if DEBUG_ENABLED && DEBUG_PARSING
-	  dbg_print(F("Mode: "));
-	  dbg_print(value);
-	  dbg_print('\n');
+      dbg_print(F("Mode: "));
+      dbg_print(value);
+      dbg_print('\n');
 #endif
-	  if(value & ~mode_mask) {
-		// illegal mode
-		usb_state = usb_Idle;
-		return 1;
-	  }
-	  usb_mode = value;
-	  usb_state = usb_InIgnoredBytes;
-	  break;
+      if(value & ~mode_mask) {
+        // illegal mode
+        usb_state = usb_Idle;
+        return 1;
+      }
+      usb_mode = value;
+      usb_state = usb_InIgnoredBytes;
+      break;
 
     case usb_SetChannelRange:
 #if DEBUG_ENABLED && DEBUG_PARSING
-	  dbg_print(cur_channel);
-	  dbg_print(F(": "));
-	  dbg_print(value);
-	  dbg_print('\n');
+      dbg_print(cur_channel);
+      dbg_print(F(": "));
+      dbg_print(value);
+      dbg_print('\n');
 #endif
-	  dmx_set_channel(cur_channel++, value);
-	  // No need to check if cur_channel is in range
-	  break;
+      dmx_set_channel(cur_channel++, value);
+      // No need to check if cur_channel is in range
+      break;
 
-	default:
+    default:
 #if DEBUG_ENABLED && DEBUG_PARSING
-	  dbg_print(F("Unknown state\n"));
+      dbg_print(F("Unknown state\n"));
 #endif
-	  // unknown state
-	  usb_state = usb_Idle;
-	  return 1;
+      // unknown state
+      usb_state = usb_Idle;
+      return 1;
   }
   return 0;
 }
@@ -224,7 +224,7 @@ uchar   usbFunctionWrite(uchar *data, uchar len)
     }
 
   if(failure)
-	usb_state = usb_Idle;
+    usb_state = usb_Idle;
 
   return failure ? 255 : (usb_index == usb_length ? 1 : 0);
 

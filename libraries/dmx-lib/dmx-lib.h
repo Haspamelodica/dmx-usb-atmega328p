@@ -2,13 +2,13 @@
 
 // convenience macros (from Pascal Stangs avrlib)
 #ifndef BV
-	#define BV(bit)			(1<<(bit))
+    #define BV(bit)         (1<<(bit))
 #endif
 #ifndef cbi
-	#define cbi(reg,bit)	reg &= ~(BV(bit))
+    #define cbi(reg,bit)    reg &= ~(BV(bit))
 #endif
 #ifndef sbi
-	#define sbi(reg,bit)	reg |= (BV(bit))
+    #define sbi(reg,bit)    reg |= (BV(bit))
 #endif
 
 typedef unsigned char  u08;

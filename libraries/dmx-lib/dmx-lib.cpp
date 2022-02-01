@@ -69,7 +69,7 @@ inline uint8_t handle_udre_inPacket() {
   }
   else {
 #if HANDLE_UDRE0_VIA_INTERRUPT
-	cbi(UCSR0B, UDRIE0); // disable UDRE (TX Data Register Empty) interrupt
+    cbi(UCSR0B, UDRIE0); // disable UDRE (TX Data Register Empty) interrupt
 #endif
 #if (HANDLE_TXC0_VIA_INTERRUPT && DEBUG_UNEXPECTED_TXC0)
     txc0_expected = 1;
@@ -129,9 +129,9 @@ ISR(USART_UDRE_vect) {
 
   while(UCSR0A & BV(UDRE0))
     if(dmx_state == dmx_InPacket)
-	  if(handle_udre_inPacket())
-		// return, not break, to skip re-enabling UDRIE0 if we are now in EndOfPacket
-		return;
+      if(handle_udre_inPacket())
+        // return, not break, to skip re-enabling UDRIE0 if we are now in EndOfPacket
+        return;
 
 #if !ATOMIC_UDRE
   // Re-enable UDRIE0, but first disable interrupts:
@@ -163,7 +163,7 @@ void dmx_poll() {
         txc0_from_interrupt = 0;
 #endif // HANDLE_TXC0_VIA_INTERRUPT
 #if HANDLE_UDRE0_VIA_INTERRUPT
-		sbi(UCSR0B, UDRIE0); // enable UDRE (TX Data Register Empty) interrupt
+        sbi(UCSR0B, UDRIE0); // enable UDRE (TX Data Register Empty) interrupt
 #endif // HANDLE_UDRE0_VIA_INTERRUPT
         break;
       }
@@ -173,17 +173,17 @@ void dmx_poll() {
           break;
         if (!handle_udre_inPacket())
           break;
-		break;
+        break;
       }
 #endif
     case dmx_EndOfPacket: {
         if (
 #if HANDLE_TXC0_VIA_INTERRUPT
-			txc0_from_interrupt
+            txc0_from_interrupt
 #else
-			UCSR0A & BV(TXC0)
+            UCSR0A & BV(TXC0)
 #endif
-		) {
+        ) {
 #if HANDLE_TXC0_VIA_INTERRUPT
 #if DEBUG_UNEXPECTED_TXC0
           txc0_expected = 0;

@@ -22,7 +22,7 @@
 // by enabling ATOMIC_UDRE.
 #define ATOMIC_UDRE 0
 
-#define NUM_CHANNELS 512		// number of channels in DMX-512
+#define NUM_CHANNELS 512 // number of channels in DMX-512
 
 // values for dmx_state
 #define dmx_Off 0
