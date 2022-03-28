@@ -4,9 +4,18 @@ This is an Arduino project implementing an USB-DMX interface compatible with [QL
 It uses a rewritten port of [UDMX](https://github.com/mirdej/udmx) for implementing DMX,
 and [VUSB](https://www.obdev.at/products/vusb/index.html) for implementing USB.
 
+## Split mode
+
+The interface can be used with one or with two Atmegas. Using two Atmegas is called "split mode".
+The interface is very choppy if split mode is disabled, which is the default.
+
+Split mode is not implemented yet.
+TODO implement split mode
+
 ## Interface variants
 
 There are two variants of the interface, differing in what protocol they use to communicate with the host.
+Both can be used with or without split mode.
 
 ### UDMX-based interface
 
@@ -32,6 +41,15 @@ To build the interface, you need to build a small circuit.
 The circuit is in `circuit/circuit.fzz` and can be opened with [Fritzing](https://fritzing.org/).
 If you don't want to install Fritzing, screenshots are available as well.
 
+#### Split mode
+
+There is no circuit diagram for split mode. However, most of the circuit stays the same, except for the following:
+- Add a second Atmega including a clock.
+- Connect the RS485 adapter to the Tx output of the second Atmega instead of the first Atmega, and
+  connect the Rx input of the second Atmega to the Tx output of the first Atmega.
+  
+  In other words, insert the second Atmega between the first Atmega's Tx output and the RS485 adapter.
+
 ### Compiling firmware
 
 Both interface variants come in the form of Arduino sketches.
@@ -48,22 +66,27 @@ After importing, the Arduino software will see `dmx-hid` and `dmx-udmx` as regul
 You should set the board to "Arduino Uno" (Tools -> Board -> Arduino AVR Boards -> Arduino Uno).
 Then, Arduino should be able to compile both variants without problems.
 
+#### Split mode
+
+To use split mode, define `SPLIT_MODE` in `dmxusb-config-common.h`.
+See chapter "Configuration and tuning" for details on how to change configuration.
+
 ### Uploading firmware
 
 TODO
 
-### Configuring
+### Configuration and tuning
 
+All configuration is in `libraries/dmxusb-config` in files starting with `dmxusb-config-`.
 In general, "enabling" or "setting" a constant means setting its value to 1,
 and "disabling" or "unsetting" means setting the value to 0.
 
-Some constants affecting both variants can be found in `libraries/dmx-lib/dmx-constants.h`.
-UDMX-only constants are in `dmx-udmx/dmx-udmx.h`, and HID-only constants in `dmx-hid/dmx-hid.h`.
-
-If the interface is choppy, try enabling ATOMIC_UDRE in `dmx-constants.h`.
+If the interface is choppy, try enabling ATOMIC_UDRE in `dmxusb-config-dmx.h`.
 This makes DMX transmissions much more reliable; at the cost of more errors on the USB side.
+This only makes a difference if you use one Atmega.
 
 ## Related links
+
  - [QLC+](https://qlcplus.org/)
  - [VUSB project website](https://www.obdev.at/products/vusb/index.html)
  - [VUSB sources](https://github.com/obdev/v-usb)

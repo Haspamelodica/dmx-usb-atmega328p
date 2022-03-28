@@ -10,14 +10,16 @@
 // target-cpu: ATMega328p @ 16MHz
 // ==============================================================================
 
+#define IS_DMX_CLIENT 1
 
 // ==============================================================================
 // includes
 // ------------------------------------------------------------------------------
 
-// local includes
-#include "dmx-udmx.h"
-#include "udmx-cmds.h"    // USB command and error constants
+// DMX library
+#include <dmxusb-dmx-lib.h>
+// UDMX USB library (includes config)
+#include <dmxusb-usb-udmx-lib.h>
 
 // AVR Libc (see http://www.nongnu.org/avr-libc/)
 #include <avr/io.h>     // include I/O definitions (port names, pin names, etc)
@@ -25,9 +27,7 @@
 #include <avr/interrupt.h>  // include interrupt support
 #include <avr/wdt.h>    // include watchdog timer support
 
-// UDMX USB library
-#include <dmx-udmx-lib.h>
-
+// debugging
 #if DEBUG_ENABLED
 #include <dmx-debug-lib.h>
 #endif

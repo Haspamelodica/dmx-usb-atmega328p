@@ -1,5 +1,20 @@
+#include "dmxusb-constants-usb.h"
+#include "dmxusb-config-usb-hid.h"
+
+//TODO throw an error instead
+#define DEBUG_ENABLED (DISABLE_DMX_OUTPUT && (DEBUG_USB || DEBUG_PARSING || DEBUG_DMX_VALUES))
+
+// values for usb_state
+#define usb_NotInitialized 0
+#define usb_Idle 1
+#define usb_InIgnoredBytes 2
+#define usb_SetReportStart 3
+#define usb_SetMode_ExpectingMode 4
+#define usb_SetChannelRange 5
+
 #define BLOCK_SIZE 32
 
+// Commands
 // Commands 0-15 set blocks of output data.
 // Set interface mode. For modes see below.
 #define cmd_SetMode 16
@@ -8,6 +23,7 @@
 // Store timings to internal memory, probably? Ignored.
 #define cmd_StoreTimings 18
 
+// Modes
 #define mode_in_to_out_bit (1 << 0)
 #define mode_pc_to_out_bit (1 << 1)
 #define mode_in_to_pc_bit (1 << 2)

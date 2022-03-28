@@ -7,24 +7,25 @@
    License: GNU GPL v2 (see License.txt), GNU GPL v3 or proprietary (CommercialLicense.txt)
 */
 
-/*
-  This example should run on most AVRs with only little changes. No special
-  hardware resources except INT0 are used. You may have to change usbconfig.h for
-  different I/O pins for USB. Please note that USB D+ must be the INT0 pin, or
-  at least be connected to INT0 as well.
-*/
+#define IS_DMX_CLIENT 1
 
+// ==============================================================================
+// includes
+// ------------------------------------------------------------------------------
+
+// DMX library
+#include <dmxusb-dmx-lib.h>
+// HID USB library (includes config)
+#include <dmxusb-usb-hid-lib.h>
+
+// AVR Libc (see http://www.nongnu.org/avr-libc/)
 #include <avr/io.h>
 #include <avr/wdt.h>
 #include <avr/interrupt.h>  /* for sei() */
 #include <util/delay.h>     /* for _delay_ms() */
 #include <avr/eeprom.h>
 
-#include "dmx-hid.h"
-#include "hid-cmds.h"
-
-#include "dmx-hid-lib.h"
-
+// debugging
 #if DEBUG_ENABLED
 #include <dmx-debug-lib.h>
 #endif

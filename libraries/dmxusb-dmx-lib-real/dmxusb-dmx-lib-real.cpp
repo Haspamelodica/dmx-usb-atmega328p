@@ -1,4 +1,4 @@
-#include "dmx-lib.h"
+#include "dmxusb-dmx-lib-real.h"
 
 // AVR Libc (see http://www.nongnu.org/avr-libc/)
 #include <string.h>        // memcpy

@@ -1,6 +1,5 @@
 #include <Arduino.h>
 
-// debugging
 void dbg_usbrequest(void *request_raw);
 void dbg_hexdump(void *data, size_t byte_len);
 

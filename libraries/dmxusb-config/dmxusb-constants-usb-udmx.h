@@ -1,11 +1,18 @@
-#ifndef __usb_cmds_included_included__
-#define __usb_cmds_included_included__
+#include "dmxusb-constants-usb.h"
+#include "dmxusb-config-usb-udmx.h"
+
+//TODO throw an error instead
+#define DEBUG_ENABLED (DISABLE_DMX_OUTPUT && (DEBUG_USB || DEBUG_DMX_VALUES))
+
+// values for usb_state
+#define usb_NotInitialized 0
+#define usb_Idle 1
+#define usb_ChannelRange 2
 
 /*
  *  udmx-cmds.h
  *  Created by Max Egger on 14.02.06.
  */
-
 #define cmd_SetSingleChannel 1
 /* usb request for cmd_SetSingleChannel:
     bmRequestType:  ignored by device, should be USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT
@@ -27,5 +34,3 @@
 
 #define err_BadChannel 1
 #define err_BadValue 2
-
-#endif
