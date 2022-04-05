@@ -50,7 +50,8 @@ uint8_t txc0_expected;
 uint8_t txc0_from_interrupt;
 // Transmit Complete interrupt vector
 
-// TODO see UDRE ISR
+// This interrupt routine takes shorter than the 25 cycles required by usbdrv.
+// See also UDRE handler.
 ISR(USART_TX_vect, ISR_NOBLOCK) {
 #if DEBUG_UNEXPECTED_TXC0
   if (!txc0_expected)
@@ -196,7 +197,7 @@ void dmx_poll() {
 
           sbi(GTCCR, PSRSYNC);  // reset timer prescaler
           // TCNT0 = 123;    // 132 clks = 88us // only correct for 12Mhz
-          TCNT0 = F_CPU / 8 * 92 / 1000000; // prescaler is 8 and we want 92us (instead of 88us in the original)
+          TCNT0 = F_CPU / 8 * 88 / 1000000; // prescaler is 8 and we want 88us. (The standard says 92us, but that isn't as reliable.)
           sbi(TIFR0, TOV0); // clear timer overflow flag
           dmx_state = dmx_InBreak;
         }
@@ -208,7 +209,7 @@ void dmx_poll() {
           sbi(PORTD, 1);    // pull TX pin high
           sbi(GTCCR, PSRSYNC);  // reset timer prescaler
           // TCNT0 = 243;    // 12 clks = 8us // only correct for 12Mhz
-          TCNT0 = F_CPU / 8 * 12 / 1000000; // prescaler is 8 and we want 12us (instead of 8us in the original)
+          TCNT0 = F_CPU / 8 * 8 / 1000000; // prescaler is 8 and we want 8us. (The standard says 12us, but that isn't as reliable.)
           sbi(TIFR0, TOV0); // clear timer overflow flag
           dmx_state = dmx_InMAB;
         }

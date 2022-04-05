@@ -7,4 +7,10 @@
 // The first Atmega (the one with the USB interface) runs the dmx-hid / dmx-udmx sketch as usual,
 // and the second one (the one with the RS485 adapter) runs the dmx-server sketch.
 // The dmx-hid / dmx-udmx sketch needs to be recompiled and reuploaded if this changes.
-#define SPLIT_MODE 1
+#define SPLIT_MODE 0
+
+// LED constants
+#define LED_GREEN_PORT PORTD
+#define LED_GREEN_BIT 3
+#define LED_YELLOW_PORT PORTD
+#define LED_YELLOW_BIT 4

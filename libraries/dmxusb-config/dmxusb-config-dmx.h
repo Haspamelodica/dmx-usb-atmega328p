@@ -11,7 +11,7 @@
 // This happens if an UDRE0 interrupt couldn't be handled in time,
 // which happens if the USB driver is active for too long.
 // If this happens, the current DMX packet transmission will fail.
-//TODO this probably only works if HANDLE_TXC0_VIA_INTERRUPT?
+// This only has an effect if HANDLE_TXC0_VIA_INTERRUPT is enabled.
 #define DEBUG_UNEXPECTED_TXC0 0
 
 #define HANDLE_TXC0_VIA_INTERRUPT 1
@@ -23,5 +23,5 @@
 // which in turn makes DMX output very choppy and unreliable.
 // So, this behaviour (enabling interrupts in the UDRE handler) can be disabled
 // by enabling ATOMIC_UDRE.
-//TODO this probably only works if HANDLE_UDRE0_VIA_INTERRUPT?
+// This only has an effect if HANDLE_UDRE0_VIA_INTERRUPT is enabled.
 #define ATOMIC_UDRE 0

@@ -1,8 +1,10 @@
 #include "dmxusb-constants-usb.h"
 #include "dmxusb-config-usb-hid.h"
 
-//TODO throw an error instead
 #define DEBUG_ENABLED (DISABLE_DMX_OUTPUT && (DEBUG_USB || DEBUG_PARSING || DEBUG_DMX_VALUES))
+#if !DISABLE_DMX_OUTPUT && (DEBUG_USB || DEBUG_PARSING || DEBUG_DMX_VALUES)
+    #warning "DEBUG_USB, DEBUG_PARSING or DEBUG_DMX_VALUES is set, but debugging not enabled. DEBUG_USB, DEBUG_PARSING and DEBUG_DMX_VALUES will have no effect."
+#endif
 
 // values for usb_state
 #define usb_NotInitialized 0

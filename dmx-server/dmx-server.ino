@@ -19,6 +19,39 @@
 #include <dmx-debug-lib.h>
 #endif
 
+u16 cur_receiving_channel;
+u08 server_state;
+
+ISR(USART_RX_vect) {
+  // Enable interrupts, but first disable the RXC interrupt to avoid an endless loop.
+  cbi(UCSR0B, RXCIE0);
+  sei();
+
+  switch(server_state) {
+    case server_WaitingSyncByte1:
+      if(UDR0 == SYNC_BYTE_1)
+        server_state = server_WaitingSyncByte2;
+      break;
+    case server_WaitingSyncByte2:
+      if(UDR0 == SYNC_BYTE_2) {
+        cur_receiving_channel = 0;
+        server_state = server_Data;
+	  } else
+		server_state = server_WaitingSyncByte1;
+      break;
+    case server_Data:
+      dmx_set_channel(cur_receiving_channel, UDR0);
+      if(++ cur_receiving_channel == NUM_CHANNELS)
+        server_state = server_WaitingSyncByte1;
+      break;
+  }
+
+  // Re-enable RXCIE0, but first disable interrupts:
+  // We only want to handle the next RXC after returning from this iteration
+  cli();
+  sbi(UCSR0B, RXCIE0);
+}
+
 void init() {
 #if DEBUG_ENABLED
   Serial.begin(DEBUG_BAUD);
@@ -36,7 +69,12 @@ void init() {
 
   wdt_enable(WDTO_1S);  // enable watchdog timer
 
+  // dmx_init initializes UART baud rate, frame format, and transmitter.
   dmx_init();
+  
+  // Set up UART receiver: set RXEN0 and RXCIE0 (RX Complete Interrupt Enable) bits
+  UCSR0B |= BV(RXEN0) | BV(RXCIE0);
+  server_state = server_WaitingSyncByte1;
 
   sei();
 
@@ -48,11 +86,10 @@ void init() {
 int main()
 {
   init();
-
+  
   for(;;) {              /* main event loop */
     wdt_reset();
     dmx_poll();
-	//TODO receive and handle byte
   }
   return 0;
 }

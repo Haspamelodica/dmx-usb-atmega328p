@@ -76,7 +76,7 @@ uchar usbFunctionRead(uchar *data, uchar len)
 {
   (void) data;
   (void) len;
-  //TODO implement
+  // we don't support reading channels.
   return 0xFF;
   /*
   if (usb_state != usb_GetChannelRange) {

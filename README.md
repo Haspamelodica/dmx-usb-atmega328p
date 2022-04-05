@@ -9,9 +9,6 @@ and [VUSB](https://www.obdev.at/products/vusb/index.html) for implementing USB.
 The interface can be used with one or with two Atmegas. Using two Atmegas is called "split mode".
 The interface is very choppy if split mode is disabled, which is the default.
 
-Split mode is not implemented yet.
-TODO implement split mode
-
 ## Interface variants
 
 There are two variants of the interface, differing in what protocol they use to communicate with the host.
@@ -81,9 +78,9 @@ All configuration is in `libraries/dmxusb-config` in files starting with `dmxusb
 In general, "enabling" or "setting" a constant means setting its value to 1,
 and "disabling" or "unsetting" means setting the value to 0.
 
-If the interface is choppy, try enabling ATOMIC_UDRE in `dmxusb-config-dmx.h`.
+If the interface is choppy, try enabling `ATOMIC_UDRE` in `dmxusb-config-dmx.h`.
 This makes DMX transmissions much more reliable; at the cost of more errors on the USB side.
-This only makes a difference if you use one Atmega.
+This only makes a difference if you don't use split mode.
 
 ## Related links
 
