@@ -4,10 +4,13 @@ This is an Arduino project implementing an USB-DMX interface compatible with [QL
 It uses a rewritten port of [UDMX](https://github.com/mirdej/udmx) for implementing DMX,
 and [VUSB](https://www.obdev.at/products/vusb/index.html) for implementing USB.
 
+You don't need experience with Arduino, C or C++ to build this; I tried to explain every step without requiring prior knowledge in those areas.
+However, you do need experience in soldering and building small circuits.
+
 ## Split mode
 
 The interface can be used with one or with two Atmegas. Using two Atmegas is called "split mode".
-The interface is very choppy if split mode is disabled, which is the default.
+If split mode is disabled, which is the default, the interface will be very choppy.
 
 ## Interface variants
 
@@ -59,18 +62,27 @@ For this, you have to import the sketches into Arduino.
 - The ugliest way is to create symlinks. You should only do this if you know what symlinks are.
 
 After importing, the Arduino software will see `dmx-hid` and `dmx-udmx` as regular sketches.
-(As you probably guessed, `dmx-hid` is the HID-based variant and `dmx-udmx` the UDMX-based one.)
+As you probably guessed, `dmx-hid` is the HID-based variant and `dmx-udmx` the UDMX-based one.
 You should set the board to "Arduino Uno" (Tools -> Board -> Arduino AVR Boards -> Arduino Uno).
 Then, Arduino should be able to compile both variants without problems.
 
 #### Split mode
 
-To use split mode, define `SPLIT_MODE` in `dmxusb-config-common.h`.
+Import the `dmx-server` sketch as well, like you imported `dmx-hid` and `dmx-udmx`.
+This is the sketch running on the second Atmega.
+
+To use split mode, enable `SPLIT_MODE` in `dmxusb-config-common.h`.
 See chapter "Configuration and tuning" for details on how to change configuration.
 
 ### Uploading firmware
 
-TODO
+I recommend uploading the sketches via an ISP programmer. There are plenty of tutorials on how to upload Arduino sketches using ISP.
+If you have a regular Arduino board, you can use it as an ISP programmer: see https://www.arduino.cc/en/pmwiki.php?n=Tutorial/ArduinoISP.
+
+Another way is to use the Arduino bootloader.
+In this case, you need an USB-to-Serial adapter for uploading sketches (once the bootloader is burned).
+Again, you can use a regular Arduino board if you have one where the microcontroller can be removed; for example the non-SMD variant of the Uno.
+https://docs.arduino.cc/built-in-examples/arduino-isp/ArduinoToBreadboard contains information on how to do this, although not the entire tutorial applies here.
 
 ### Configuration and tuning
 
