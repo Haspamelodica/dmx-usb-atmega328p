@@ -74,15 +74,21 @@ This is the sketch running on the second Atmega.
 To use split mode, enable `SPLIT_MODE` in `dmxusb-config-common.h`.
 See chapter "Configuration and tuning" for details on how to change configuration.
 
-### Uploading firmware
+### Burning firmware
 
-I recommend uploading the sketches via an ISP programmer. There are plenty of tutorials on how to upload Arduino sketches using ISP.
+I recommend burning the sketches via an ISP programmer. There are plenty of tutorials on how to burn Arduino sketches using ISP.
 If you have a regular Arduino board, you can use it as an ISP programmer: see https://www.arduino.cc/en/pmwiki.php?n=Tutorial/ArduinoISP.
 
 Another way is to use the Arduino bootloader.
-In this case, you need an USB-to-Serial adapter for uploading sketches (once the bootloader is burned).
+In this case, you need an USB-to-Serial adapter for burning sketches (once the bootloader is burned).
 Again, you can use a regular Arduino board if you have one where the microcontroller can be removed; for example the non-SMD variant of the Uno.
 https://docs.arduino.cc/built-in-examples/arduino-isp/ArduinoToBreadboard contains information on how to do this, although not the entire tutorial applies here.
+
+#### Split mode
+
+Burn the `dmx-hid` or `dmx-udmx` sketch to the first Atmega (as without split mode), and the `dmx-server` sketch to the second one.
+Keep in mind that the `dmx-hid` and `dmx-udmx` sketches change in behaviour when enabling or disabling split mode,
+so you have to re-compile and -burn them as well after en- or disabling split mode.
 
 ### Configuration and tuning
 
