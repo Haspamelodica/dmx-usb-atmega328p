@@ -71,7 +71,7 @@ Then, Arduino should be able to compile both variants without problems.
 Import the `dmx-server` sketch as well, like you imported `dmx-hid` and `dmx-udmx`.
 This is the sketch running on the second Atmega.
 
-To use split mode, enable `SPLIT_MODE` in `dmxusb-config-common.h`.
+Also, enable `SPLIT_MODE` in `dmxusb-config-common.h`.
 See chapter "Configuration and tuning" for details on how to change configuration.
 
 ### Burning firmware
