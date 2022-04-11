@@ -1,4 +1,4 @@
-// Settings in this file only have an effect for the Atmega the real DMX interface is running on.
+// Settings in this file control the real DMX interface and, if split mode is enabled, also the protocol implementation between the two Atmegas.
 
 // Setting this will disable outputting any DMX data.
 // If set, the interface will not change any registers for timer0 or the serial port,
@@ -12,6 +12,7 @@
 // which happens if the USB driver is active for too long.
 // If this happens, the current DMX packet transmission will fail.
 // This only has an effect if HANDLE_TXC0_VIA_INTERRUPT is enabled.
+// If split mode is enabled, this only effects the real DMX interface.
 #define DEBUG_UNEXPECTED_TXC0 0
 
 #define HANDLE_TXC0_VIA_INTERRUPT 1
@@ -24,4 +25,5 @@
 // So, this behaviour (enabling interrupts in the UDRE handler) can be disabled
 // by enabling ATOMIC_UDRE.
 // This only has an effect if HANDLE_UDRE0_VIA_INTERRUPT is enabled.
+// If split mode is enabled, this only effects the real DMX interface.
 #define ATOMIC_UDRE 0
