@@ -216,7 +216,7 @@ uchar   usbFunctionWrite(uchar *data, uchar len)
       // optimization for SetChannelRange
       if(usb_state == usb_SetChannelRange && i < len - 1 && !failure) {
         uint8_t remaining = len - i;
-        dmx_set_range(cur_channel + i, remaining, data);
+        dmx_set_range(cur_channel, remaining, &data[i]);
         cur_channel += remaining;
         break;
       }
