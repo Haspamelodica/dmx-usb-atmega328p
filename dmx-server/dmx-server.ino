@@ -36,8 +36,8 @@ ISR(USART_RX_vect) {
       if(UDR0 == SYNC_BYTE_2) {
         cur_receiving_channel = 0;
         server_state = server_Data;
-	  } else
-		server_state = server_WaitingSyncByte1;
+      } else
+        server_state = server_WaitingSyncByte1;
       break;
     case server_Data:
       dmx_set_channel(cur_receiving_channel, UDR0);

@@ -1,7 +1,7 @@
 #include "dmxusb-config-common.h"
 
 #if DMX_CHANNELS > 512
-	#error "DMX_CHANNELS is too high; must be at most 512. Change in dmxusb-config-common.h."
+    #error "DMX_CHANNELS is too high; must be at most 512. Change in dmxusb-config-common.h."
 #endif
 
 // convenience macros (from Pascal Stangs avrlib)
