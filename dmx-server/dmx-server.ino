@@ -16,7 +16,7 @@
 
 // debugging
 #if DEBUG_ENABLED
-#include <dmx-debug-lib.h>
+#include <dmxusb-debug-lib.h>
 #endif
 
 u16 cur_receiving_channel;

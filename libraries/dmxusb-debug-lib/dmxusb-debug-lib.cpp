@@ -1,4 +1,4 @@
-#include <dmx-debug-lib.h>
+#include <dmxusb-debug-lib.h>
 #include <stddef.h>
 
 // We can't use the real usbRequest_t since we would need to know which usbconfig.h is used.

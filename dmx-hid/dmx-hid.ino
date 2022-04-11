@@ -27,7 +27,7 @@
 
 // debugging
 #if DEBUG_ENABLED
-#include <dmx-debug-lib.h>
+#include <dmxusb-debug-lib.h>
 #endif
 
 /* ------------------------------------------------------------------------- */
