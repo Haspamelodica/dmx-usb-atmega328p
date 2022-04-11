@@ -215,6 +215,14 @@ uchar   usbFunctionWrite(uchar *data, uchar len)
 
   // optimization for SetChannelRange
   if(usb_state == usb_SetChannelRange && !failure) {
+#if DEBUG_ENABLED && DEBUG_PARSING
+      dbg_print(cur_channel);
+      dbg_print(F(" - "));
+      dbg_print(cur_channel + len);
+      dbg_print(':');
+      dbg_hexdump(data, len);
+      dbg_print('\n');
+#endif
     dmx_set_range(cur_channel, len, data);
 #if DEBUG_ENABLED && DEBUG_DMX_VALUES
     dmx_changed = true;
@@ -226,6 +234,14 @@ uchar   usbFunctionWrite(uchar *data, uchar len)
       // optimization for SetChannelRange
       if(usb_state == usb_SetChannelRange && i < len - 1 && !failure) {
         uint8_t remaining = len - i;
+#if DEBUG_ENABLED && DEBUG_PARSING
+        dbg_print(cur_channel);
+        dbg_print(F(" - "));
+        dbg_print(cur_channel + remaining);
+        dbg_print(':');
+        dbg_hexdump(&data[i], remaining);
+        dbg_print('\n');
+#endif
         dmx_set_range(cur_channel, remaining, &data[i]);
 #if DEBUG_ENABLED && DEBUG_DMX_VALUES
         dmx_changed = true;
