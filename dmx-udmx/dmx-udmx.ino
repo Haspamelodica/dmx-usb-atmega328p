@@ -56,6 +56,10 @@ static u08 reply[8];
 // LED keep alive counter
 static u16 lka_count;
 
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+static u08 dmx_changed;
+#endif
+
 // This descriptor is based on http://www.usb.org/developers/devclass_docs/midi10.pdf
 // u
 // Appendix B. Example: Simple MIDI Adapter (Informative)
@@ -295,6 +299,10 @@ void init(void)
 
   sei();
 
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+  dmx_changed = true;
+#endif
+
 #if DEBUG_ENABLED
   dbg_print(F(" complete!\n"));
 #endif
@@ -348,11 +356,6 @@ uchar usbFunctionSetup(uchar data[8])
   dbg_usbrequest(data);
   dbg_print('\n');
 #endif
-#if DEBUG_ENABLED && DEBUG_DMX_VALUES
-  dbg_print(F("dmx vals"));
-  dbg_hexdump(dmx_data, NUM_CHANNELS);
-  dbg_print('\n');
-#endif
 
   usbMsgPtr = (usbMsgPtr_t) reply;
   reply[0] = 0;
@@ -370,6 +373,9 @@ uchar usbFunctionSetup(uchar data[8])
       return 1;
     }
     dmx_set_channel(channel, rq->wValue.bytes[0]);
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+    dmx_changed = true;
+#endif
   }
   else if (rq->bRequest == cmd_SetChannelRange) {
     lka_count = 0;
@@ -445,17 +451,26 @@ void usbFunctionWriteOut(uchar * data, uchar len)
           u08 chan_no = msg->byte[1] - 1;
           if (chan_no < 120) {  // controllers 120..127 are reserved for channel mode msg
             dmx_set_channel(chan_no, msg->byte[2] << 1);
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+            dmx_changed = true;
+#endif
           }
           break;
         }
       case 0x90: {        // note on
           u08 chan_no = msg->byte[1] - 1;
           dmx_set_channel(chan_no, msg->byte[2] << 1);
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+          dmx_changed = true;
+#endif
           break;
         }
       case 0x80: {        // note off
           u08 chan_no = msg->byte[1] - 1;
           dmx_set_channel(chan_no, 0);
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+          dmx_changed = true;
+#endif
           break;
         }
       default: break;
@@ -484,6 +499,9 @@ uchar usbFunctionWrite(uchar* data, uchar len)
   len = min(len, end_channel - cur_channel);
 
   dmx_set_range(cur_channel, len, data);
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+  dmx_changed = true;
+#endif
   cur_channel += len;
 
   if (cur_channel >= end_channel) {
@@ -513,6 +531,16 @@ int main(void)
       lka_count++;
       cbi(LED_YELLOW_PORT, LED_YELLOW_BIT);
     }
+
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+    if (dmx_changed) {
+      dbg_print(F("dmx vals"));
+      dbg_hexdump(dmx_data, NUM_CHANNELS);
+      dbg_print('\n');
+      dmx_changed = false;
+    }
+#endif
+
   }
   return 0;
 }

@@ -67,6 +67,10 @@ static u16 cur_channel;
 // LED keep alive counter
 static u16 lka_count;
 
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+static u08 dmx_changed;
+#endif
+
 /* ------------------------------------------------------------------------- */
 
 /* usbFunctionRead() is called when the host requests a chunk of data from
@@ -176,6 +180,9 @@ inline uint8_t handle_written_byte(uint8_t value) {
       dbg_print('\n');
 #endif
       dmx_set_channel(cur_channel++, value);
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+      dmx_changed = true;
+#endif
       // No need to check if cur_channel is in range
       break;
 
@@ -209,6 +216,9 @@ uchar   usbFunctionWrite(uchar *data, uchar len)
   // optimization for SetChannelRange
   if(usb_state == usb_SetChannelRange && !failure) {
     dmx_set_range(cur_channel, len, data);
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+    dmx_changed = true;
+#endif
     cur_channel += len;
   }
   else
@@ -217,6 +227,9 @@ uchar   usbFunctionWrite(uchar *data, uchar len)
       if(usb_state == usb_SetChannelRange && i < len - 1 && !failure) {
         uint8_t remaining = len - i;
         dmx_set_range(cur_channel, remaining, &data[i]);
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+        dmx_changed = true;
+#endif
         cur_channel += remaining;
         break;
       }
@@ -239,6 +252,9 @@ uchar   usbFunctionWrite(uchar *data, uchar len)
   len = min(len, end_channel - cur_channel);
 
   dmx_set_range(cur_channel, len, data);
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+  dmx_changed = true;
+#endif
   cur_channel += len;
 
   if (cur_channel >= end_channel) {
@@ -259,11 +275,6 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 #if DEBUG_ENABLED && DEBUG_USB
   dbg_print(F("setup"));
   dbg_usbrequest(data);
-  dbg_print('\n');
-#endif
-#if DEBUG_ENABLED && DEBUG_DMX_VALUES
-  dbg_print(F("dmx vals"));
-  dbg_hexdump(dmx_data, NUM_CHANNELS);
   dbg_print('\n');
 #endif
 
@@ -348,6 +359,10 @@ void init() {
 
   sei();
 
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+  dmx_changed = true;
+#endif
+
 #if DEBUG_ENABLED
   dbg_print(F(" complete!\n"));
 #endif
@@ -370,6 +385,16 @@ int main()
       lka_count++;
       cbi(LED_YELLOW_PORT, LED_YELLOW_BIT);
     }
+
+#if DEBUG_ENABLED && DEBUG_DMX_VALUES
+    if (dmx_changed) {
+      dbg_print(F("dmx vals"));
+      dbg_hexdump(dmx_data, NUM_CHANNELS);
+      dbg_print('\n');
+      dmx_changed = false;
+    }
+#endif
+
   }
   return 0;
 }
